@@ -13,7 +13,7 @@ tuner:
   #SMAC (SMAC should be installed through nnictl)
   builtinTunerName: BatchTuner
 trial:
-  command: python3 mnist-keras.py
+  command: python3 patches-keras.py
   codeDir: .
   gpuNum: 0
   cpuNum: 1
