@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Spinner } from '@fluentui/react';
+import { DRAWEROPTION } from '../../static/const';
 import MonacoEditor from 'react-monaco-editor';
 
 interface MonacoEditorProps {
@@ -9,8 +10,18 @@ interface MonacoEditorProps {
 }
 
 class MonacoHTML extends React.Component<MonacoEditorProps, {}> {
+    public _isMonacoMount!: boolean;
+
     constructor(props: MonacoEditorProps) {
         super(props);
+    }
+
+    componentDidMount(): void {
+        this._isMonacoMount = true;
+    }
+
+    componentWillUnmount(): void {
+        this._isMonacoMount = false;
     }
 
     render(): React.ReactNode {
@@ -29,27 +40,11 @@ class MonacoHTML extends React.Component<MonacoEditorProps, {}> {
                             height={height}
                             language='json'
                             value={content}
-                            options={{
-                                minimap: { enabled: false },
-                                readOnly: true,
-                                automaticLayout: true,
-                                wordWrap: 'on'
-                            }}
+                            options={DRAWEROPTION}
                         />
                     </Spinner>
                 ) : (
-                    <MonacoEditor
-                        width='100%'
-                        height={height}
-                        language='json'
-                        value={content}
-                        options={{
-                            minimap: { enabled: false },
-                            readOnly: true,
-                            automaticLayout: true,
-                            wordWrap: 'on'
-                        }}
-                    />
+                    <MonacoEditor width='100%' height={height} language='json' value={content} options={DRAWEROPTION} />
                 )}
             </React.Fragment>
         );

@@ -13,7 +13,7 @@ assessor:
     optimize_mode: maximize
 trial:
   codeDir: ../../../examples/trials/mnist-batch-tune-keras
-  command: python3 mnist-keras.py --epochs 1
+  command: python3 patches-keras.py --epochs 1
   gpuNum: 0
 
 useAnnotation: false
