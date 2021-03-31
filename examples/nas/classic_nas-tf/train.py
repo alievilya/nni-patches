@@ -9,6 +9,14 @@ import nni
 from nni.nas.tensorflow.mutables import LayerChoice, InputChoice
 from nni.algorithms.nas.tensorflow.classic_nas import get_and_apply_next_architecture
 
+import numpy as np
+import os
+import cv2
+import json
+from os.path import isfile, join
+from sklearn.model_selection import train_test_split
+
+
 tf.get_logger().setLevel('ERROR')
 
 class Net(Model):
@@ -31,7 +39,7 @@ class Net(Model):
         self.gap = AveragePooling2D(2)
         self.fc1 = Dense(120, activation='relu')
         self.fc2 = Dense(84, activation='relu')
-        self.fc3 = Dense(10)
+        self.fc3 = Dense(3)
 
     def call(self, x):
         bs = x.shape[0]
@@ -54,6 +62,47 @@ class Net(Model):
         return x
 
 loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+
+
+def load_images(file_path, size=120, is_train=True):
+    with open('X:/code/Maga_Nir/frameworks_for_paper/nni-patches/nni/dataset_files/labels.json', 'r') as fp:
+        labels_dict = json.load(fp)
+    with open('X:/code/Maga_Nir/frameworks_for_paper/nni-patches/nni/dataset_files/encoded_labels.json', 'r') as fp:
+        encoded_labels = json.load(fp)
+    Xarr = []
+    Yarr = []
+    number_of_classes = 3
+    files = [f for f in os.listdir(file_path) if isfile(join(file_path, f))]
+    files.sort()
+    for filename in files:
+        image = cv2.imread(join(file_path, filename))
+        # image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        image = cv2.resize(image, (size, size))
+        Xarr.append(image)
+        label_names = labels_dict[filename[:-4]]
+        each_file_labels = [0 for _ in range(number_of_classes)]
+        for name in label_names:
+            num_label = encoded_labels[name]
+            # each_file_labels.append(num_label)
+            each_file_labels[num_label] = 1
+        Yarr.append(each_file_labels)
+    Xarr = np.array(Xarr)
+    Yarr = np.array(Yarr)
+    # Xarr = Xarr.reshape(-1, size, size, 1)
+
+    return Xarr, Yarr
+
+
+def load_patches(file_path='X:/code/Maga_Nir/frameworks_for_paper/nni-patches/nni/Generated_dataset'):
+    Xtrain, Ytrain = load_images(file_path, size=120, is_train=True)
+    new_Ytrain = []
+    for y in Ytrain:
+        ys = np.argmax(y)
+        new_Ytrain.append(ys)
+    new_Ytrain = np.array(new_Ytrain)
+    Xtrain, Xval, Ytrain, Yval = train_test_split(Xtrain, new_Ytrain, random_state=1, train_size=0.8)
+
+    return Xtrain, Ytrain, Xval, Yval
 
 def loss(model, x, y, training):
     # training=training is needed only if there are layers with different
@@ -109,8 +158,9 @@ if __name__ == '__main__':
                         help='number of epochs to train (default: 10)')
     args, _ = parser.parse_known_args()
 
-    cifar10 = tf.keras.datasets.cifar10
-    (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+    # cifar10 = tf.keras.datasets.cifar10
+    # x_train, y_train, x_test, y_test = cifar10.load_data()
+    x_train, y_train, x_test, y_test = load_patches()
     x_train, x_test = x_train / 255.0, x_test / 255.0
     split = int(len(x_train) * 0.9)
     dataset_train = tf.data.Dataset.from_tensor_slices((x_train[:split], y_train[:split])).batch(64)
