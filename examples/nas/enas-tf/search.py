@@ -82,7 +82,7 @@ trainer = enas.EnasTrainer(model,
                            reward_function=accuracy,
                            optimizer=optimizer,
                            batch_size=64,
-                           num_epochs=10,
+                           num_epochs=20,
                            dataset_train=dataset_train,
                            dataset_valid=dataset_valid)
 trainer.train()
