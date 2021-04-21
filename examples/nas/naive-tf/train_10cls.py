@@ -19,13 +19,13 @@ from sklearn.model_selection import train_test_split
 
 
 def load_images(file_path, size=120, is_train=True):
-    with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/labels.json', 'r') as fp:
+    with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/tenlabels.json', 'r') as fp:
         labels_dict = json.load(fp)
-    with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/encoded_labels.json', 'r') as fp:
+    with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/tenencoded_labels.json', 'r') as fp:
         encoded_labels = json.load(fp)
     Xarr = []
     Yarr = []
-    number_of_classes = 3
+    number_of_classes = 10
     files = [f for f in os.listdir(file_path) if isfile(join(file_path, f))]
     files.sort()
     for filename in files:
@@ -47,7 +47,7 @@ def load_images(file_path, size=120, is_train=True):
     return Xarr, Yarr
 
 
-def load_patches(file_path='/nfshome/ialiev/Ilya-files/nni-patches/Generated_dataset'):
+def load_patches(file_path='/nfshome/ialiev/Ilya-files/nni-patches/10cls_Generated_dataset'):
     Xtrain, Ytrain = load_images(file_path, size=120, is_train=True)
     new_Ytrain = []
     for y in Ytrain:
@@ -59,53 +59,6 @@ def load_patches(file_path='/nfshome/ialiev/Ilya-files/nni-patches/Generated_dat
     return (Xtrain, Ytrain), (Xval, Yval)
 
 
-
-import numpy as np
-import os
-import cv2
-import json
-from os.path import isfile, join
-from sklearn.model_selection import train_test_split
-
-def load_images(file_path, size=120, is_train=True):
-    with open('X:/code/Maga_Nir/frameworks_for_paper/nni-patches/nni/dataset_files/labels.json', 'r') as fp:
-        labels_dict = json.load(fp)
-    with open('X:/code/Maga_Nir/frameworks_for_paper/nni-patches/nni/dataset_files/encoded_labels.json', 'r') as fp:
-        encoded_labels = json.load(fp)
-    Xarr = []
-    Yarr = []
-    number_of_classes = 3
-    files = [f for f in os.listdir(file_path) if isfile(join(file_path, f))]
-    files.sort()
-    for filename in files:
-        image = cv2.imread(join(file_path, filename))
-        # image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        image = cv2.resize(image, (size, size))
-        Xarr.append(image)
-        label_names = labels_dict[filename[:-4]]
-        each_file_labels = [0 for _ in range(number_of_classes)]
-        for name in label_names:
-            num_label = encoded_labels[name]
-            # each_file_labels.append(num_label)
-            each_file_labels[num_label] = 1
-        Yarr.append(each_file_labels)
-    Xarr = np.array(Xarr)
-    Yarr = np.array(Yarr)
-    # Xarr = Xarr.reshape(-1, size, size, 1)
-
-    return Xarr, Yarr
-
-
-def load_patches(file_path='X:/code/Maga_Nir/frameworks_for_paper/nni-patches/nni/Generated_dataset'):
-    Xtrain, Ytrain = load_images(file_path, size=120, is_train=True)
-    new_Ytrain = []
-    for y in Ytrain:
-        ys = np.argmax(y)
-        new_Ytrain.append(ys)
-    new_Ytrain = np.array(new_Ytrain)
-    Xtrain, Xval, Ytrain, Yval = train_test_split(Xtrain, new_Ytrain, random_state=1, train_size=0.8)
-
-    return Xtrain, Ytrain, Xval, Yval
 
 class Net(Model):
     def __init__(self):
@@ -162,16 +115,11 @@ def accuracy_metrics(truth, logits):
 
 
 if __name__ == '__main__':
-
+    cifar10 = tf.keras.datasets.cifar10
     (x_train, y_train), (x_valid, y_valid) = load_patches()
     x_train, x_valid = x_train / 255.0, x_valid / 255.0
-
-    # cifar10 = tf.keras.datasets.cifar10
-    # (x_train, y_train), (x_valid, y_valid) = cifar10.load_data()
-    x_train, y_train, x_test, y_test = load_patches()
-    x_train, x_test = x_train / 255.0, x_test / 255.0
     train_set = (x_train, y_train)
-    valid_set = (x_test, y_test)
+    valid_set = (x_valid, y_valid)
 
     net = Net()
 

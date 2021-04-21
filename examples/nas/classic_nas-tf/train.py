@@ -65,9 +65,15 @@ loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
 
 def load_images(file_path, size=120, is_train=True):
+<<<<<<< HEAD
+    with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/labels.json', 'r') as fp:
+        labels_dict = json.load(fp)
+    with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/encoded_labels.json', 'r') as fp:
+=======
     with open('X:/code/Maga_Nir/frameworks_for_paper/nni-patches/nni/dataset_files/labels.json', 'r') as fp:
         labels_dict = json.load(fp)
     with open('X:/code/Maga_Nir/frameworks_for_paper/nni-patches/nni/dataset_files/encoded_labels.json', 'r') as fp:
+>>>>>>> c2977272e6d4710dcbfa305a45ca979e843004a8
         encoded_labels = json.load(fp)
     Xarr = []
     Yarr = []
@@ -93,7 +99,11 @@ def load_images(file_path, size=120, is_train=True):
     return Xarr, Yarr
 
 
+<<<<<<< HEAD
+def load_patches(file_path='/nfshome/ialiev/Ilya-files/nni-patches/Generated_dataset'):
+=======
 def load_patches(file_path='X:/code/Maga_Nir/frameworks_for_paper/nni-patches/nni/Generated_dataset'):
+>>>>>>> c2977272e6d4710dcbfa305a45ca979e843004a8
     Xtrain, Ytrain = load_images(file_path, size=120, is_train=True)
     new_Ytrain = []
     for y in Ytrain:
@@ -154,7 +164,7 @@ def test(model, test_dataset):
 if __name__ == '__main__':
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
-    parser.add_argument('--epochs', type=int, default=10, metavar='N',
+    parser.add_argument('--epochs', type=int, default=1000, metavar='N',
                         help='number of epochs to train (default: 10)')
     args, _ = parser.parse_known_args()
 
