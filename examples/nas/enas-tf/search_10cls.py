@@ -24,10 +24,12 @@ from sklearn.model_selection import train_test_split
 
 # TODO: argparse
 
-def load_images(file_path, size=120, is_train=True):
-    with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/tenlabels.json', 'r') as fp:
+def load_images(size=120, is_train=True):
+
+    file_path='C:/Users/aliev/Documents/GitHub/nas-fedot/10cls_Generated_dataset'
+    with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/labels_10.json', 'r') as fp:
         labels_dict = json.load(fp)
-    with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/tenencoded_labels.json', 'r') as fp:
+    with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/encoded_labels_10.json', 'r') as fp:
         encoded_labels = json.load(fp)
     Xarr = []
     Yarr = []
@@ -52,9 +54,9 @@ def load_images(file_path, size=120, is_train=True):
 
     return Xarr, Yarr
 
+def load_patches():
 
-def load_patches(file_path='/nfshome/ialiev/Ilya-files/nni-patches/10cls_Generated_dataset'):
-    Xtrain, Ytrain = load_images(file_path, size=120, is_train=True)
+    Xtrain, Ytrain = load_images(size=120, is_train=True)
     new_Ytrain = []
     for y in Ytrain:
         y_a = []
@@ -84,7 +86,7 @@ trainer = enas.EnasTrainer(model,
                            reward_function=accuracy,
                            optimizer=optimizer,
                            batch_size=64,
-                           num_epochs=30,
+                           num_epochs=100,
                            dataset_train=dataset_train,
                            dataset_valid=dataset_valid)
 trainer.train()

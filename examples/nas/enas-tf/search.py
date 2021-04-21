@@ -23,10 +23,12 @@ from sklearn.model_selection import train_test_split
 # TODO: argparse
 
 def load_images(file_path, size=120, is_train=True):
-    with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/labels.json', 'r') as fp:
+    file_path='C:/Users/aliev/Documents/GitHub/nas-fedot/Generated_dataset'
+    with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/labels.json', 'r') as fp:
         labels_dict = json.load(fp)
-    with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/encoded_labels.json', 'r') as fp:
+    with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/encoded_labels.json', 'r') as fp:
         encoded_labels = json.load(fp)
+
     Xarr = []
     Yarr = []
     number_of_classes = 3
@@ -50,7 +52,7 @@ def load_images(file_path, size=120, is_train=True):
 
     return Xarr, Yarr
 
-def load_patches(file_path='/nfshome/ialiev/Ilya-files/nni-patches/Generated_dataset'):
+def load_patches(file_path=''):
 
     Xtrain, Ytrain = load_images(file_path, size=120, is_train=True)
     new_Ytrain = []
@@ -82,11 +84,7 @@ trainer = enas.EnasTrainer(model,
                            reward_function=accuracy,
                            optimizer=optimizer,
                            batch_size=64,
-<<<<<<< HEAD
                            num_epochs=30,
-=======
-                           num_epochs=20,
->>>>>>> 509cf461bc8339e87692b9d92df414cc0c7388ad
                            dataset_train=dataset_train,
                            dataset_valid=dataset_valid)
 trainer.train()
