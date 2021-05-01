@@ -4,6 +4,8 @@ from tensorflow.keras import Model
 from tensorflow.keras.layers import (AveragePooling2D, BatchNormalization, Conv2D, Dense, MaxPool2D)
 from tensorflow.keras.losses import Reduction, SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import SGD
+from sklearn.metrics import roc_auc_score as roc_auc
+import statistics
 
 import nni
 from nni.nas.tensorflow.mutables import LayerChoice, InputChoice
@@ -141,7 +143,9 @@ def train(net, train_dataset, optimizer, num_epochs):
 def test(model, test_dataset):
     test_accuracy = tf.keras.metrics.Accuracy()
     test_loss = tf.keras.metrics.Mean()
+    # test_AUC = tf.keras.metrics.AUC(num_thresholds=3)
 
+    roc_auc_values = []
     for (x, y) in test_dataset:
         # training=False is needed only if there are layers with different
         # behavior during training versus inference (e.g. Dropout).
@@ -150,9 +154,18 @@ def test(model, test_dataset):
         test_accuracy(prediction, y)
         test_loss(prediction, y)
 
+        for predict, true in zip(logits, y):
+            y_true = [0 for _ in range(10)]
+            y_true[true] = 1
+            roc_auc_score = roc_auc(y_true=y_true,
+                                    y_score=predict)
+            roc_auc_values.append(roc_auc_score)
+    roc_auc_value = statistics.mean(roc_auc_values)
+
     print("Test set accuracy: {:.3%}".format(test_accuracy.result()))
     print("Test set loss: {:.3%}".format(test_loss.result()))
-    return test_accuracy.result(), test_loss.result()
+    print("ROC AUC: {:.3%}".format(roc_auc_value))
+    return test_accuracy.result(), test_loss.result(), roc_auc_value
 
 if __name__ == '__main__':
     # Training settings
@@ -178,7 +191,8 @@ if __name__ == '__main__':
 
     train(net, dataset_train, optimizer, args.epochs)
 
-    acc, loss = test(net, dataset_test)
+    acc, loss, auc = test(net, dataset_test)
 
     nni.report_final_result(acc.numpy())
     nni.report_final_result(loss.numpy())
+    nni.report_final_result(auc)

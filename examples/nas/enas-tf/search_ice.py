@@ -10,6 +10,8 @@ from tensorflow.keras import Model
 from tensorflow.keras.layers import (AveragePooling2D, BatchNormalization, Conv2D, Dense, MaxPool2D)
 from tensorflow.keras.losses import Reduction, SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import SGD
+from sklearn.metrics import roc_auc_score as roc_auc
+import statistics
 
 from nni.nas.tensorflow.mutables import LayerChoice, InputChoice
 from nni.algorithms.nas.tensorflow.enas import EnasTrainer
@@ -116,7 +118,7 @@ class Net(Model):
         self.gap = AveragePooling2D(2)
         self.fc1 = Dense(120, activation='relu')
         self.fc2 = Dense(84, activation='relu')
-        self.fc3 = Dense(10)
+        self.fc3 = Dense(2)
 
     def call(self, x):
         bs = x.shape[0]
@@ -145,9 +147,30 @@ def accuracy(truth, logits):
     equal = tf.cast(predicted == truth, tf.int32)
     return tf.math.reduce_sum(equal).numpy() / equal.shape[0]
 
+
+def loss_f(truth, prediction):
+    test_loss = tf.keras.metrics.Mean()
+    test_loss(prediction, truth)
+    return test_loss.result()
+
+
+def auc_f(truth, prediction):
+    roc_auc_values = []
+    for predict, true in zip(prediction, truth):
+        y_true = [0 for _ in range(2)]
+        y_true[true[0]] = 1
+        roc_auc_score = roc_auc(y_true=y_true,
+                                y_score=predict)
+        roc_auc_values.append(roc_auc_score)
+    roc_auc_value = statistics.mean(roc_auc_values)
+    return roc_auc_value
+
 def accuracy_metrics(truth, logits):
     acc = accuracy(truth, logits)
-    return {'accuracy': acc}
+
+    loss = loss_f(truth, logits)
+    auc = auc_f(truth, logits)
+    return {'accuracy': acc, 'loss': loss, 'ROC AUC': auc}
 
 
 if __name__ == '__main__':
@@ -167,7 +190,7 @@ if __name__ == '__main__':
         reward_function=accuracy,
         optimizer=SGD(learning_rate=0.001, momentum=0.9),
         batch_size=64,
-        num_epochs=100,
+        num_epochs=1,
         dataset_train=train_set,
         dataset_valid=valid_set
     )
