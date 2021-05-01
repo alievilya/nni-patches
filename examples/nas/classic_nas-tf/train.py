@@ -142,6 +142,7 @@ def train(net, train_dataset, optimizer, num_epochs):
 
 def test(model, test_dataset):
     test_accuracy = tf.keras.metrics.Accuracy()
+    test_loss = tf.keras.metrics.Mean()
 
     for (x, y) in test_dataset:
         # training=False is needed only if there are layers with different
@@ -149,14 +150,16 @@ def test(model, test_dataset):
         logits = model(x, training=False)
         prediction = tf.argmax(logits, axis=1, output_type=tf.int32)
         test_accuracy(prediction, y)
+        test_loss(prediction, y)
 
     print("Test set accuracy: {:.3%}".format(test_accuracy.result()))
-    return test_accuracy.result()
+    print("Test set accuracy: {:.3%}".format(test_loss.result()))
+    return test_accuracy.result(), test_loss.result()
 
 if __name__ == '__main__':
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
-    parser.add_argument('--epochs', type=int, default=1000, metavar='N',
+    parser.add_argument('--epochs', type=int, default=1, metavar='N',
                         help='number of epochs to train (default: 10)')
     args, _ = parser.parse_known_args()
 
@@ -177,6 +180,7 @@ if __name__ == '__main__':
 
     train(net, dataset_train, optimizer, args.epochs)
 
-    acc = test(net, dataset_test)
+    acc, loss = test(net, dataset_test)
 
     nni.report_final_result(acc.numpy())
+    nni.report_final_result(loss.numpy())
