@@ -67,7 +67,13 @@ loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
 
 def load_images(file_path, size=120, is_train=True):
-    file_path='C:/Users/aliev/Documents/GitHub/nas-fedot/Generated_dataset'
+    # file_path='/nfshome/ialiev/Ilya-files/nni-patches//Generated_dataset'
+    # with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/labels.json', 'r') as fp:
+    #     labels_dict = json.load(fp)
+    # with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/encoded_labels.json', 'r') as fp:
+    #     encoded_labels = json.load(fp)
+
+    file_path = 'C:/Users/aliev/Documents/GitHub/nas-fedot/Generated_dataset'
     with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/labels.json', 'r') as fp:
         labels_dict = json.load(fp)
     with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/encoded_labels.json', 'r') as fp:
