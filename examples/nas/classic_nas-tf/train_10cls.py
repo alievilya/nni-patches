@@ -151,7 +151,7 @@ def test(model, test_dataset):
         test_loss(prediction, y)
 
     print("Test set accuracy: {:.3%}".format(test_accuracy.result()))
-    print("Test set accuracy: {:.3%}".format(test_loss.result()))
+    print("Test set loss: {:.3%}".format(test_loss.result()))
     return test_accuracy.result(), test_loss.result()
 
 if __name__ == '__main__':
