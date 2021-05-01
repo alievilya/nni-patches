@@ -4,15 +4,15 @@
 # -*- coding: utf-8 -*-
 import os, sys
 
+
+import tensorflow as tf
+from tensorflow.keras import Model
+from tensorflow.keras.layers import (AveragePooling2D, BatchNormalization, Conv2D, Dense, MaxPool2D)
 from tensorflow.keras.losses import Reduction, SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import SGD
 
-from nni.algorithms.nas.tensorflow import enas
-
-import datasets
-from macro import GeneralNetwork
-from micro import MicroNetwork
-from utils import accuracy, accuracy_metrics
+from nni.nas.tensorflow.mutables import LayerChoice, InputChoice
+from nni.algorithms.nas.tensorflow.enas import EnasTrainer
 
 import numpy as np
 import os
@@ -20,16 +20,7 @@ import cv2
 import json
 from os.path import isfile, join
 from sklearn.model_selection import train_test_split
-
-from os.path import isfile, join
-
 import pandas as pd
-from sklearn.model_selection import train_test_split
-import cv2
-
-import os
-from sklearn.preprocessing import LabelEncoder
-from keras.utils import np_utils
 
 
 
@@ -105,24 +96,80 @@ def get_more_images(imgs):
 
 
 
-file_path = 'C:/Users/aliev/Documents/GitHub/nas-fedot/IcebergsDataset/train.json'
-Xtrain, Ytrain, Xval, Yval = from_json(file_path=file_path)
-# Xtrain, Xval = Xtrain / 255.0, Xval / 255.0
-dataset_train, dataset_valid = (Xtrain, Ytrain), (Xval, Yval)
+class Net(Model):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = LayerChoice([
+            Conv2D(6, 3, padding='same', activation='relu'),
+            Conv2D(6, 5, padding='same', activation='relu'),
+        ])
+        self.pool = MaxPool2D(2)
+        self.conv2 = LayerChoice([
+            Conv2D(16, 3, padding='same', activation='relu'),
+            Conv2D(16, 5, padding='same', activation='relu'),
+        ])
+        self.conv3 = Conv2D(16, 1)
 
-# model = GeneralNetwork()
-model = MicroNetwork()
+        self.skipconnect = InputChoice(n_candidates=1)
+        self.bn = BatchNormalization()
 
-loss = SparseCategoricalCrossentropy(from_logits=True, reduction=Reduction.NONE)
-optimizer = SGD(learning_rate=0.05, momentum=0.9)
+        self.gap = AveragePooling2D(2)
+        self.fc1 = Dense(120, activation='relu')
+        self.fc2 = Dense(84, activation='relu')
+        self.fc3 = Dense(10)
 
-trainer = enas.EnasTrainer(model,
-                           loss=loss,
-                           metrics=accuracy_metrics,
-                           reward_function=accuracy,
-                           optimizer=optimizer,
-                           batch_size=64,
-                           num_epochs=100,
-                           dataset_train=dataset_train,
-                           dataset_valid=dataset_valid)
-trainer.train()
+    def call(self, x):
+        bs = x.shape[0]
+
+        t = self.conv1(x)
+        x = self.pool(t)
+        x0 = self.conv2(x)
+        x1 = self.conv3(x0)
+
+        x0 = self.skipconnect([x0])
+        if x0 is not None:
+            x1 += x0
+        x = self.pool(self.bn(x1))
+
+        x = self.gap(x)
+        x = tf.reshape(x, [bs, -1])
+        x = self.fc1(x)
+        x = self.fc2(x)
+        x = self.fc3(x)
+        return x
+
+
+def accuracy(truth, logits):
+    truth = tf.reshape(truth, (-1, ))
+    predicted = tf.cast(tf.math.argmax(logits, axis=1), truth.dtype)
+    equal = tf.cast(predicted == truth, tf.int32)
+    return tf.math.reduce_sum(equal).numpy() / equal.shape[0]
+
+def accuracy_metrics(truth, logits):
+    acc = accuracy(truth, logits)
+    return {'accuracy': acc}
+
+
+if __name__ == '__main__':
+
+
+    file_path = 'C:/Users/aliev/Documents/GitHub/nas-fedot/IcebergsDataset/train.json'
+    Xtrain, Ytrain, Xval, Yval = from_json(file_path=file_path)
+    train_set = (Xtrain, Ytrain)
+    valid_set = (Xval, Yval)
+
+    net = Net()
+
+    trainer = EnasTrainer(
+        net,
+        loss=SparseCategoricalCrossentropy(from_logits=True, reduction=Reduction.NONE),
+        metrics=accuracy_metrics,
+        reward_function=accuracy,
+        optimizer=SGD(learning_rate=0.001, momentum=0.9),
+        batch_size=64,
+        num_epochs=100,
+        dataset_train=train_set,
+        dataset_valid=valid_set
+    )
+
+    trainer.train()

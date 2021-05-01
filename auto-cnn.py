@@ -1,17 +1,14 @@
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
+import os
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # Removes Tensorflow debuggin ouputs
 
-from tensorflow.keras.losses import Reduction, SparseCategoricalCrossentropy
-from tensorflow.keras.optimizers import SGD
+import tensorflow as tf
 
-from nni.algorithms.nas.tensorflow import enas
+tf.get_logger().setLevel('INFO') # Removes Tensorflow debugging ouputs
 
-import datasets
-from macro import GeneralNetwork
-from micro import MicroNetwork
-from utils import accuracy, accuracy_metrics
+from auto_cnn.gan import AutoCNN
 
+import random
 import numpy as np
 import os
 import cv2
@@ -20,9 +17,12 @@ from os.path import isfile, join
 from sklearn.model_selection import train_test_split
 
 
-# TODO: argparse
+# Sets the random seeds to make testing more consisent
+random.seed(42)
+tf.random.set_seed(42)
 
-def load_images(file_path, size=120, is_train=True):
+
+def load_images(size=120, is_train=True):
     file_path='C:/Users/aliev/Documents/GitHub/nas-fedot/Generated_dataset'
     with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/labels.json', 'r') as fp:
         labels_dict = json.load(fp)
@@ -52,39 +52,35 @@ def load_images(file_path, size=120, is_train=True):
 
     return Xarr, Yarr
 
-def load_patches(file_path=''):
+def load_patches():
 
-    Xtrain, Ytrain = load_images(file_path, size=120, is_train=True)
+    Xtrain, Ytrain = load_images(size=120, is_train=True)
     new_Ytrain = []
     for y in Ytrain:
-        y_a = []
         ys = np.argmax(y)
-        y_a.append(ys)
-        new_Ytrain.append(y_a)
+        new_Ytrain.append(ys)
     new_Ytrain = np.array(new_Ytrain)
     Xtrain, Xval, Ytrain, Yval = train_test_split(Xtrain, new_Ytrain, random_state=1, train_size=0.8)
 
-    return Xtrain, Ytrain, Xval, Yval
+    return (Xtrain, Ytrain), (Xval, Yval)
+
+def mnist_test():
+    # Loads the data as test and train
+    # (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
+    (Xtrain, y_train), (Xval, y_test) = load_patches()
+    x_train, x_test = Xtrain / 255.0, Xval / 255.0
+    # dataset_train, dataset_valid = (Xtrain, Ytrain), (Xval, Yval)
 
 
-# dataset_train, dataset_valid = datasets.get_dataset()
-Xtrain, Ytrain, Xval, Yval = load_patches()
-Xtrain, Xval = Xtrain / 255.0, Xval / 255.0
-dataset_train, dataset_valid = (Xtrain, Ytrain), (Xval, Yval)
+    # Puts the data in a dictionary for the algorithm to use
+    data = {'x_train': x_train, 'y_train': y_train, 'x_test': x_test, 'y_test': y_test}
 
-# model = GeneralNetwork()
-model = MicroNetwork(num_classes=3)
+    # Sets the wanted parameters
+    a = AutoCNN(population_size=5, maximal_generation_number=4, dataset=data, epoch_number=5)
 
-loss = SparseCategoricalCrossentropy(from_logits=True, reduction=Reduction.NONE)
-optimizer = SGD(learning_rate=0.05, momentum=0.9)
+    # Runs the algorithm until the maximal_generation_number has been reached
+    best_cnn = a.run()
+    print(best_cnn)
 
-trainer = enas.EnasTrainer(model,
-                           loss=loss,
-                           metrics=accuracy_metrics,
-                           reward_function=accuracy,
-                           optimizer=optimizer,
-                           batch_size=64,
-                           num_epochs=4,
-                           dataset_train=dataset_train,
-                           dataset_valid=dataset_valid)
-trainer.train()
+if __name__ == '__main__':
+    mnist_test()

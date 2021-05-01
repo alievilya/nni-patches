@@ -39,7 +39,7 @@ class Net(Model):
         self.gap = AveragePooling2D(2)
         self.fc1 = Dense(120, activation='relu')
         self.fc2 = Dense(84, activation='relu')
-        self.fc3 = Dense(10)
+        self.fc3 = Dense(3)
 
     def call(self, x):
         bs = x.shape[0]
@@ -65,14 +65,13 @@ loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
 
 def load_images(file_path, size=120, is_train=True):
-    file_path='C:/Users/aliev/Documents/GitHub/nas-fedot/10cls_Generated_dataset'
-    with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/labels_10.json', 'r') as fp:
+    with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/labels.json', 'r') as fp:
         labels_dict = json.load(fp)
-    with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/encoded_labels_10.json', 'r') as fp:
+    with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/encoded_labels.json', 'r') as fp:
         encoded_labels = json.load(fp)
     Xarr = []
     Yarr = []
-    number_of_classes = 10
+    number_of_classes = 3
     files = [f for f in os.listdir(file_path) if isfile(join(file_path, f))]
     files.sort()
     for filename in files:
@@ -94,8 +93,7 @@ def load_images(file_path, size=120, is_train=True):
     return Xarr, Yarr
 
 
-def load_patches(file_path='X:/code/Maga_Nir/frameworks_for_paper/nni-patches/nni/Generated_dataset'):
-
+def load_patches(file_path='/nfshome/ialiev/Ilya-files/nni-patches/Generated_dataset'):
     Xtrain, Ytrain = load_images(file_path, size=120, is_train=True)
     new_Ytrain = []
     for y in Ytrain:
