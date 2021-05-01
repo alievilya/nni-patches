@@ -39,7 +39,7 @@ class Net(Model):
         self.gap = AveragePooling2D(2)
         self.fc1 = Dense(120, activation='relu')
         self.fc2 = Dense(84, activation='relu')
-        self.fc3 = Dense(3)
+        self.fc3 = Dense(10)
 
     def call(self, x):
         bs = x.shape[0]
@@ -71,7 +71,7 @@ def load_images(file_path, size=120, is_train=True):
         encoded_labels = json.load(fp)
     Xarr = []
     Yarr = []
-    number_of_classes = 3
+    number_of_classes = 10
     files = [f for f in os.listdir(file_path) if isfile(join(file_path, f))]
     files.sort()
     for filename in files:
