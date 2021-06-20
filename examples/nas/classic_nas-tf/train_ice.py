@@ -1,29 +1,20 @@
 import argparse
-import tensorflow as tf
-from tensorflow.keras import Model
-from tensorflow.keras.layers import (AveragePooling2D, BatchNormalization, Conv2D, Dense, MaxPool2D)
-from tensorflow.keras.losses import Reduction, SparseCategoricalCrossentropy
-from tensorflow.keras.optimizers import SGD
-
-import nni
-from nni.nas.tensorflow.mutables import LayerChoice, InputChoice
-from nni.algorithms.nas.tensorflow.classic_nas import get_and_apply_next_architecture
-
-import numpy as np
-import os
-import cv2
-import json
-from os.path import isfile, join
-from sklearn.model_selection import train_test_split
-
-import pandas as pd
-from sklearn.model_selection import train_test_split
-import cv2
-
-from sklearn.metrics import roc_auc_score as roc_auc
 import statistics
 
+import cv2
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+from sklearn.metrics import roc_auc_score as roc_auc
+from sklearn.model_selection import train_test_split
+from tensorflow.keras import Model
+from tensorflow.keras.layers import (AveragePooling2D, BatchNormalization, Conv2D, Dense, MaxPool2D)
+
+from nni.algorithms.nas.tensorflow.classic_nas import get_and_apply_next_architecture
+from nni.nas.tensorflow.mutables import LayerChoice, InputChoice
+
 tf.get_logger().setLevel('ERROR')
+
 
 class Net(Model):
     def __init__(self):
@@ -69,6 +60,7 @@ class Net(Model):
         x = self.fc3(x)
         return x
 
+
 loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
 
@@ -79,10 +71,12 @@ def loss(model, x, y, training):
 
     return loss_object(y_true=y, y_pred=y_)
 
+
 def grad(model, inputs, targets):
     with tf.GradientTape() as tape:
         loss_value = loss(model, inputs, targets, training=True)
     return loss_value, tape.gradient(loss_value, model.trainable_variables)
+
 
 def train(net, train_dataset, optimizer, num_epochs):
     train_loss_results = []
@@ -103,8 +97,9 @@ def train(net, train_dataset, optimizer, num_epochs):
 
         if epoch % 1 == 0:
             print("Epoch {:03d}: Loss: {:.3f}, Accuracy: {:.3%}".format(epoch,
-                                                                epoch_loss_avg.result(),
-                                                                epoch_accuracy.result()))
+                                                                        epoch_loss_avg.result(),
+                                                                        epoch_accuracy.result()))
+
 
 def test(model, test_dataset):
     test_accuracy = tf.keras.metrics.Accuracy()
@@ -137,7 +132,6 @@ def test(model, test_dataset):
     return test_accuracy.result(), test_loss.result(), roc_auc_value
 
 
-
 def from_json(file_path):
     df_train = pd.read_json(file_path)
     Xtrain = get_scaled_imgs(df_train)
@@ -153,13 +147,13 @@ def from_json(file_path):
         Ytrain_new.append(new_Y)
     Ytrain = np.array(Ytrain_new)
 
-
     Xtrain, Xtest, Ytrain, Ytest = train_test_split(Xtrain, Ytrain, random_state=1, train_size=0.75)
     # Xtr_more = get_more_images(Xtrain)
     # Ytr_more = np.concatenate((Ytrain, Ytrain, Ytrain))
 
     # return Xtr_more, Ytr_more, Xtest, Ytest
     return Xtrain, Ytrain, Xtest, Ytest
+
 
 def get_scaled_imgs(df):
     imgs = []
@@ -175,7 +169,7 @@ def get_scaled_imgs(df):
         b = (band_2 - band_2.mean()) / (band_2.max() - band_2.min())
         c = (band_3 - band_3.mean()) / (band_3.max() - band_3.min())
         im = np.dstack((a, b, c))
-        im = cv2.resize(im, (72, 72), interpolation = cv2.INTER_AREA)
+        im = cv2.resize(im, (72, 72), interpolation=cv2.INTER_AREA)
         imgs.append(im)
 
     return np.array(imgs)
@@ -209,7 +203,6 @@ def get_more_images(imgs):
     return more_images
 
 
-
 if __name__ == '__main__':
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
@@ -226,7 +219,7 @@ if __name__ == '__main__':
 
     net = Net()
     print(net)
-    
+
     get_and_apply_next_architecture(net)
 
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)

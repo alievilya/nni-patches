@@ -1,25 +1,22 @@
 import argparse
+import json
+import os
+import statistics
+from os.path import isfile, join
+
+import cv2
+import numpy as np
 import tensorflow as tf
+from sklearn.metrics import roc_auc_score as roc_auc
+from sklearn.model_selection import train_test_split
 from tensorflow.keras import Model
 from tensorflow.keras.layers import (AveragePooling2D, BatchNormalization, Conv2D, Dense, MaxPool2D)
-from tensorflow.keras.losses import Reduction, SparseCategoricalCrossentropy
-from tensorflow.keras.optimizers import SGD
-from sklearn.metrics import roc_auc_score as roc_auc
-import statistics
 
-import nni
-from nni.nas.tensorflow.mutables import LayerChoice, InputChoice
 from nni.algorithms.nas.tensorflow.classic_nas import get_and_apply_next_architecture
-
-import numpy as np
-import os
-import cv2
-import json
-from os.path import isfile, join
-from sklearn.model_selection import train_test_split
-
+from nni.nas.tensorflow.mutables import LayerChoice, InputChoice
 
 tf.get_logger().setLevel('ERROR')
+
 
 class Net(Model):
     def __init__(self):
@@ -40,9 +37,9 @@ class Net(Model):
 
         self.gap = AveragePooling2D(2)
         activations = [tf.nn.relu, tf.nn.softmax, tf.nn.leaky_relu, tf.nn.gelu, tf.nn.elu]
-        ind_act = np.random.randint(0, len(activations)-1)
-        self.fc1 =  Dense(np.random.randint(20, 200), activation=activations[ind_act])
-        self.fc2 =  Dense(np.random.randint(20, 200), activation=activations[ind_act])
+        ind_act = np.random.randint(0, len(activations) - 1)
+        self.fc1 = Dense(np.random.randint(20, 200), activation=activations[ind_act])
+        self.fc2 = Dense(np.random.randint(20, 200), activation=activations[ind_act])
         self.fc3 = Dense(3)
 
     def call(self, x):
@@ -64,6 +61,7 @@ class Net(Model):
         x = self.fc2(x)
         x = self.fc3(x)
         return x
+
 
 loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
@@ -105,7 +103,6 @@ def load_images(file_path, size=120, is_train=True):
 
 
 def load_patches(file_path='X:/code/Maga_Nir/frameworks_for_paper/nni-patches/nni/Generated_dataset'):
-
     Xtrain, Ytrain = load_images(file_path, size=120, is_train=True)
     new_Ytrain = []
     for y in Ytrain:
@@ -116,6 +113,7 @@ def load_patches(file_path='X:/code/Maga_Nir/frameworks_for_paper/nni-patches/nn
 
     return Xtrain, Ytrain, Xval, Yval
 
+
 def loss(model, x, y, training):
     # training=training is needed only if there are layers with different
     # behavior during training versus inference (e.g. Dropout).
@@ -123,10 +121,12 @@ def loss(model, x, y, training):
 
     return loss_object(y_true=y, y_pred=y_)
 
+
 def grad(model, inputs, targets):
     with tf.GradientTape() as tape:
         loss_value = loss(model, inputs, targets, training=True)
     return loss_value, tape.gradient(loss_value, model.trainable_variables)
+
 
 def train(net, train_dataset, optimizer, num_epochs):
     train_loss_results = []
@@ -147,8 +147,9 @@ def train(net, train_dataset, optimizer, num_epochs):
 
         if epoch % 1 == 0:
             print("Epoch {:03d}: Loss: {:.3f}, Accuracy: {:.3%}".format(epoch,
-                                                                epoch_loss_avg.result(),
-                                                                epoch_accuracy.result()))
+                                                                        epoch_loss_avg.result(),
+                                                                        epoch_accuracy.result()))
+
 
 def test(model, test_dataset):
     test_accuracy = tf.keras.metrics.Accuracy()
@@ -181,6 +182,7 @@ def test(model, test_dataset):
     print("ROC AUC: {:.3%}".format(roc_auc_value))
     return test_accuracy.result(), test_loss.result(), roc_auc_value
 
+
 if __name__ == '__main__':
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
@@ -198,7 +200,7 @@ if __name__ == '__main__':
     dataset_test = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(64)
 
     net = Net()
-    
+
     get_and_apply_next_architecture(net)
 
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)

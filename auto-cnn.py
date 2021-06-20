@@ -76,7 +76,7 @@ def mnist_test():
     data = {'x_train': x_train, 'y_train': y_train, 'x_test': x_test, 'y_test': y_test}
 
     # Sets the wanted parameters
-    a = AutoCNN(population_size=5, maximal_generation_number=4, dataset=data, epoch_number=5)
+    a = AutoCNN(population_size=3, maximal_generation_number=2, dataset=data, epoch_number=2)
 
     # Runs the algorithm until the maximal_generation_number has been reached
     best_cnn = a.run()

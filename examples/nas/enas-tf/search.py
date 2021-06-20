@@ -1,23 +1,22 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+import json
+import os
+import statistics
+from os.path import isfile, join
+
+import cv2
+import numpy as np
 import tensorflow as tf
+from sklearn.metrics import roc_auc_score as roc_auc
+from sklearn.model_selection import train_test_split
 from tensorflow.keras import Model
 from tensorflow.keras.layers import (AveragePooling2D, BatchNormalization, Conv2D, Dense, MaxPool2D)
 from tensorflow.keras.losses import Reduction, SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import SGD
-from sklearn.metrics import roc_auc_score as roc_auc
-import statistics
 
-from nni.nas.tensorflow.mutables import LayerChoice, InputChoice
 from nni.algorithms.nas.tensorflow.enas import EnasTrainer
-
-import numpy as np
-import os
-import cv2
-import json
-from os.path import isfile, join
-from sklearn.model_selection import train_test_split
-
+from nni.nas.tensorflow.mutables import LayerChoice, InputChoice
 
 
 def load_images(file_path, size=120, is_train=True):
@@ -26,7 +25,7 @@ def load_images(file_path, size=120, is_train=True):
     #     labels_dict = json.load(fp)
     # with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/encoded_labels_10.json', 'r') as fp:
     #     encoded_labels = json.load(fp)
-    file_path='C:/Users/aliev/Documents/GitHub/nas-fedot/Generated_dataset'
+    file_path = 'C:/Users/aliev/Documents/GitHub/nas-fedot/Generated_dataset'
     with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/labels.json', 'r') as fp:
         labels_dict = json.load(fp)
     with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/encoded_labels.json', 'r') as fp:
@@ -55,8 +54,8 @@ def load_images(file_path, size=120, is_train=True):
 
     return Xarr, Yarr
 
-def load_patches(file_path=''):
 
+def load_patches(file_path=''):
     Xtrain, Ytrain = load_images(file_path, size=120, is_train=True)
     new_Ytrain = []
     for y in Ytrain:
@@ -116,10 +115,11 @@ class Net(Model):
 
 
 def accuracy(truth, logits):
-    truth = tf.reshape(truth, (-1, ))
+    truth = tf.reshape(truth, (-1,))
     predicted = tf.cast(tf.math.argmax(logits, axis=1), truth.dtype)
     equal = tf.cast(predicted == truth, tf.int32)
     return tf.math.reduce_sum(equal).numpy() / equal.shape[0]
+
 
 def loss_f(truth, prediction):
     test_loss = tf.keras.metrics.Mean()
@@ -138,6 +138,7 @@ def auc_f(truth, prediction):
     roc_auc_value = statistics.mean(roc_auc_values)
     return roc_auc_value
 
+
 def accuracy_metrics(truth, logits):
     acc = accuracy(truth, logits)
 
@@ -145,8 +146,8 @@ def accuracy_metrics(truth, logits):
     auc = auc_f(truth, logits)
     return {'accuracy': acc, 'loss': loss, 'ROC AUC': auc}
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     x_train, y_train, x_valid, y_valid = load_patches()
     x_train, x_valid = x_train / 255.0, x_valid / 255.0
 

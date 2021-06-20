@@ -1,29 +1,24 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-#!/usr/bin/python
+# !/usr/bin/python
 # -*- coding: utf-8 -*-
-import os, sys
 
 
+import statistics
+
+import cv2
+import numpy as np
+import pandas as pd
 import tensorflow as tf
+from sklearn.metrics import roc_auc_score as roc_auc
+from sklearn.model_selection import train_test_split
 from tensorflow.keras import Model
 from tensorflow.keras.layers import (AveragePooling2D, BatchNormalization, Conv2D, Dense, MaxPool2D)
 from tensorflow.keras.losses import Reduction, SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import SGD
-from sklearn.metrics import roc_auc_score as roc_auc
-import statistics
 
-from nni.nas.tensorflow.mutables import LayerChoice, InputChoice
 from nni.algorithms.nas.tensorflow.enas import EnasTrainer
-
-import numpy as np
-import os
-import cv2
-import json
-from os.path import isfile, join
-from sklearn.model_selection import train_test_split
-import pandas as pd
-
+from nni.nas.tensorflow.mutables import LayerChoice, InputChoice
 
 
 def from_json(file_path):
@@ -41,13 +36,13 @@ def from_json(file_path):
         Ytrain_new.append(new_Y)
     Ytrain = np.array(Ytrain_new)
 
-
     Xtrain, Xtest, Ytrain, Ytest = train_test_split(Xtrain, Ytrain, random_state=1, train_size=0.75)
     Xtr_more = get_more_images(Xtrain)
     Ytr_more = np.concatenate((Ytrain, Ytrain, Ytrain))
 
     return Xtr_more, Ytr_more, Xtest, Ytest
     # return Xtrain, Ytrain, Xtest, Ytest
+
 
 def get_scaled_imgs(df):
     imgs = []
@@ -63,7 +58,7 @@ def get_scaled_imgs(df):
         b = (band_2 - band_2.mean()) / (band_2.max() - band_2.min())
         c = (band_3 - band_3.mean()) / (band_3.max() - band_3.min())
         im = np.dstack((a, b, c))
-        im = cv2.resize(im, (72, 72), interpolation = cv2.INTER_AREA)
+        im = cv2.resize(im, (72, 72), interpolation=cv2.INTER_AREA)
         imgs.append(im)
 
     return np.array(imgs)
@@ -95,7 +90,6 @@ def get_more_images(imgs):
     more_images = np.concatenate((imgs, v, h))
 
     return more_images
-
 
 
 class Net(Model):
@@ -144,7 +138,7 @@ class Net(Model):
 
 
 def accuracy(truth, logits):
-    truth = tf.reshape(truth, (-1, ))
+    truth = tf.reshape(truth, (-1,))
     predicted = tf.cast(tf.math.argmax(logits, axis=1), truth.dtype)
     equal = tf.cast(predicted == truth, tf.int32)
     return tf.math.reduce_sum(equal).numpy() / equal.shape[0]
@@ -167,6 +161,7 @@ def auc_f(truth, prediction):
     roc_auc_value = statistics.mean(roc_auc_values)
     return roc_auc_value
 
+
 def accuracy_metrics(truth, logits):
     acc = accuracy(truth, logits)
 
@@ -176,8 +171,6 @@ def accuracy_metrics(truth, logits):
 
 
 if __name__ == '__main__':
-
-
     file_path = 'C:/Users/aliev/Documents/GitHub/nas-fedot/IcebergsDataset/train.json'
     Xtrain, Ytrain, Xval, Yval = from_json(file_path=file_path)
     train_set = (Xtrain, Ytrain)
