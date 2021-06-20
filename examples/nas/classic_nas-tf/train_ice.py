@@ -20,6 +20,9 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 import cv2
 
+from sklearn.metrics import roc_auc_score as roc_auc
+import statistics
+
 tf.get_logger().setLevel('ERROR')
 
 class Net(Model):
@@ -40,9 +43,11 @@ class Net(Model):
         self.bn = BatchNormalization()
 
         self.gap = AveragePooling2D(2)
-        self.fc1 = Dense(120, activation='relu')
-        self.fc2 = Dense(84, activation='relu')
-        self.fc3 = Dense(10)
+        activations = [tf.nn.relu, tf.nn.softmax, tf.nn.leaky_relu, tf.nn.gelu, tf.nn.elu]
+        ind_act = np.random.randint(0, len(activations) - 1)
+        self.fc1 = Dense(np.random.randint(20, 200), activation=activations[ind_act])
+        self.fc2 = Dense(np.random.randint(20, 200), activation=activations[ind_act])
+        self.fc3 = Dense(2)
 
     def call(self, x):
         bs = x.shape[0]
@@ -103,16 +108,33 @@ def train(net, train_dataset, optimizer, num_epochs):
 
 def test(model, test_dataset):
     test_accuracy = tf.keras.metrics.Accuracy()
-
+    test_loss = tf.keras.metrics.Mean()
+    roc_auc_values = []
     for (x, y) in test_dataset:
         # training=False is needed only if there are layers with different
         # behavior during training versus inference (e.g. Dropout).
         logits = model(x, training=False)
         prediction = tf.argmax(logits, axis=1, output_type=tf.int32)
         test_accuracy(prediction, y)
+        test_loss(prediction, y)
+
+        for predict, true in zip(logits, y):
+            y_true = [0 for _ in range(2)]
+            true_ind = int(true)
+            y_true[true_ind] = 1
+            roc_auc_score = roc_auc(y_true=y_true,
+                                    y_score=predict)
+            roc_auc_values.append(roc_auc_score)
+
+    for el in model.variables:
+        print(el.name, el.shape)
+
+    roc_auc_value = statistics.mean(roc_auc_values)
 
     print("Test set accuracy: {:.3%}".format(test_accuracy.result()))
-    return test_accuracy.result()
+    print("Test set loss: {:.3%}".format(test_loss.result()))
+    print("ROC AUC: {:.3%}".format(roc_auc_value))
+    return test_accuracy.result(), test_loss.result(), roc_auc_value
 
 
 
@@ -191,7 +213,7 @@ def get_more_images(imgs):
 if __name__ == '__main__':
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
-    parser.add_argument('--epochs', type=int, default=1000, metavar='N',
+    parser.add_argument('--epochs', type=int, default=10, metavar='N',
                         help='number of epochs to train (default: 10)')
     args, _ = parser.parse_known_args()
 
@@ -203,13 +225,19 @@ if __name__ == '__main__':
     dataset_test = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(64)
 
     net = Net()
+    print(net)
     
     get_and_apply_next_architecture(net)
 
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
 
     train(net, dataset_train, optimizer, args.epochs)
+    summary_net = net.summary()
+    # for el in net.trainable_variables:
+    #     print(el.name, el.shape)
 
-    acc = test(net, dataset_test)
+    acc, loss, auc = test(net, dataset_test)
 
-    nni.report_final_result(acc.numpy())
+    # nni.report_final_result(acc.numpy())
+    # nni.report_final_result(loss.numpy())
+    # nni.report_final_result(auc)

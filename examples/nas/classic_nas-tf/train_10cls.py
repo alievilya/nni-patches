@@ -39,8 +39,10 @@ class Net(Model):
         self.bn = BatchNormalization()
 
         self.gap = AveragePooling2D(2)
-        self.fc1 = Dense(120, activation='relu')
-        self.fc2 = Dense(84, activation='relu')
+        activations = [tf.nn.relu, tf.nn.softmax, tf.nn.leaky_relu, tf.nn.gelu, tf.nn.elu]
+        ind_act = np.random.randint(0, len(activations) - 1)
+        self.fc1 = Dense(np.random.randint(20, 200), activation=activations[ind_act])
+        self.fc2 = Dense(np.random.randint(20, 200), activation=activations[ind_act])
         self.fc3 = Dense(10)
 
     def call(self, x):
@@ -66,11 +68,14 @@ class Net(Model):
 loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
 
-def load_images(file_path, size=120, is_train=True):
-    with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/labels.json', 'r') as fp:
+def load_images(size=120, is_train=True):
+
+    file_path = 'C:/Users/aliev/Documents/GitHub/nas-fedot/10cls_Generated_dataset'
+    with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/labels_10.json', 'r') as fp:
         labels_dict = json.load(fp)
-    with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/encoded_labels.json', 'r') as fp:
+    with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/encoded_labels_10.json', 'r') as fp:
         encoded_labels = json.load(fp)
+
     Xarr = []
     Yarr = []
     number_of_classes = 10
@@ -95,8 +100,8 @@ def load_images(file_path, size=120, is_train=True):
     return Xarr, Yarr
 
 
-def load_patches(file_path='/nfshome/ialiev/Ilya-files/nni-patches/Generated_dataset'):
-    Xtrain, Ytrain = load_images(file_path, size=120, is_train=True)
+def load_patches():
+    Xtrain, Ytrain = load_images(size=120, is_train=True)
     new_Ytrain = []
     for y in Ytrain:
         ys = np.argmax(y)
@@ -144,7 +149,6 @@ def test(model, test_dataset):
     test_accuracy = tf.keras.metrics.Accuracy()
     test_loss = tf.keras.metrics.Mean()
     # test_AUC = tf.keras.metrics.AUC(num_thresholds=3)
-
     roc_auc_values = []
     for (x, y) in test_dataset:
         # training=False is needed only if there are layers with different
@@ -160,6 +164,10 @@ def test(model, test_dataset):
             roc_auc_score = roc_auc(y_true=y_true,
                                     y_score=predict)
             roc_auc_values.append(roc_auc_score)
+
+    for el in model.variables:
+        print(el.name, el.shape)
+
     roc_auc_value = statistics.mean(roc_auc_values)
 
     print("Test set accuracy: {:.3%}".format(test_accuracy.result()))
@@ -190,9 +198,12 @@ if __name__ == '__main__':
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
 
     train(net, dataset_train, optimizer, args.epochs)
+    summary_net = net.summary()
+    # for el in net.trainable_variables:
+    #     print(el.name, el.shape)
 
     acc, loss, auc = test(net, dataset_test)
 
-    nni.report_final_result(acc.numpy())
-    nni.report_final_result(loss.numpy())
-    nni.report_final_result(auc)
+    # nni.report_final_result(acc.numpy())
+    # nni.report_final_result(loss.numpy())
+    # nni.report_final_result(auc)

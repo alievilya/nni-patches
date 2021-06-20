@@ -193,6 +193,11 @@ class EnasTrainer:
                 self.test_arc_per_epoch,
                 meters.summary(),
             )
+        self.model.summary()
+        for el in self.model.variables:
+            # for mod in el.variables:
+            print(el.name, el.shape, '')
+
 
     def _create_train_loader(self):
         train_set = self.train_set.shuffle(1000000).repeat().batch(self.batch_size)

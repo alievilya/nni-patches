@@ -39,8 +39,10 @@ class Net(Model):
         self.bn = BatchNormalization()
 
         self.gap = AveragePooling2D(2)
-        self.fc1 = Dense(120, activation='relu')
-        self.fc2 = Dense(84, activation='relu')
+        activations = [tf.nn.relu, tf.nn.softmax, tf.nn.leaky_relu, tf.nn.gelu, tf.nn.elu]
+        ind_act = np.random.randint(0, len(activations)-1)
+        self.fc1 =  Dense(np.random.randint(20, 200), activation=activations[ind_act])
+        self.fc2 =  Dense(np.random.randint(20, 200), activation=activations[ind_act])
         self.fc3 = Dense(3)
 
     def call(self, x):
@@ -168,6 +170,10 @@ def test(model, test_dataset):
             roc_auc_score = roc_auc(y_true=y_true,
                                     y_score=predict)
             roc_auc_values.append(roc_auc_score)
+
+    for el in model.variables:
+        print(el.name, el.shape)
+
     roc_auc_value = statistics.mean(roc_auc_values)
 
     print("Test set accuracy: {:.3%}".format(test_accuracy.result()))
@@ -178,7 +184,7 @@ def test(model, test_dataset):
 if __name__ == '__main__':
     # Training settings
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
-    parser.add_argument('--epochs', type=int, default=1, metavar='N',
+    parser.add_argument('--epochs', type=int, default=1000, metavar='N',
                         help='number of epochs to train (default: 10)')
     args, _ = parser.parse_known_args()
 
@@ -198,9 +204,10 @@ if __name__ == '__main__':
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
 
     train(net, dataset_train, optimizer, args.epochs)
+    # summary_net = net.summary()
 
     acc, loss, auc = test(net, dataset_test)
 
-    nni.report_final_result(acc.numpy())
-    nni.report_final_result(loss.numpy())
-    nni.report_final_result(auc)
+    # nni.report_final_result(acc.numpy())
+    # nni.report_final_result(loss.numpy())
+    # nni.report_final_result(auc)

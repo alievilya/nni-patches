@@ -26,10 +26,10 @@ def load_images(size=120, is_train=True):
     #     labels_dict = json.load(fp)
     # with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/encoded_labels_10.json', 'r') as fp:
     #     encoded_labels = json.load(fp)
-    file_path = 'C:/Users/aliev/Documents/GitHub/nas-fedot/Generated_dataset'
-    with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/labels.json', 'r') as fp:
+    file_path = 'C:/Users/aliev/Documents/GitHub/nas-fedot/10cls_Generated_dataset'
+    with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/labels_10.json', 'r') as fp:
         labels_dict = json.load(fp)
-    with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/encoded_labels.json', 'r') as fp:
+    with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/encoded_labels_10.json', 'r') as fp:
         encoded_labels = json.load(fp)
     Xarr = []
     Yarr = []
@@ -85,8 +85,10 @@ class Net(Model):
         self.bn = BatchNormalization()
 
         self.gap = AveragePooling2D(2)
-        self.fc1 = Dense(120, activation='relu')
-        self.fc2 = Dense(84, activation='relu')
+        activations = [tf.nn.relu, tf.nn.softmax, tf.nn.leaky_relu, tf.nn.gelu, tf.nn.elu]
+        ind_act = np.random.randint(0, len(activations) - 1)
+        self.fc1 = Dense(np.random.randint(20, 200), activation=activations[ind_act])
+        self.fc2 = Dense(np.random.randint(20, 200), activation=activations[ind_act])
         self.fc3 = Dense(10)
 
     def call(self, x):

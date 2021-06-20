@@ -19,19 +19,18 @@ from os.path import isfile, join
 from sklearn.model_selection import train_test_split
 
 
-# TODO: argparse
 
 def load_images(file_path, size=120, is_train=True):
-    file_path='/nfshome/ialiev/Ilya-files/nni-patches/10cls_Generated_dataset'
-    with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/labels_10.json', 'r') as fp:
-        labels_dict = json.load(fp)
-    with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/encoded_labels_10.json', 'r') as fp:
-        encoded_labels = json.load(fp)
-    # file_path='C:/Users/aliev/Documents/GitHub/nas-fedot/Generated_dataset'
-    # with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/labels.json', 'r') as fp:
+    # file_path='/nfshome/ialiev/Ilya-files/nni-patches/10cls_Generated_dataset'
+    # with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/labels_10.json', 'r') as fp:
     #     labels_dict = json.load(fp)
-    # with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/encoded_labels.json', 'r') as fp:
+    # with open('/nfshome/ialiev/Ilya-files/nni-patches/dataset_files/encoded_labels_10.json', 'r') as fp:
     #     encoded_labels = json.load(fp)
+    file_path='C:/Users/aliev/Documents/GitHub/nas-fedot/Generated_dataset'
+    with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/labels.json', 'r') as fp:
+        labels_dict = json.load(fp)
+    with open('C:/Users/aliev/Documents/GitHub/nas-fedot/dataset_files/encoded_labels.json', 'r') as fp:
+        encoded_labels = json.load(fp)
 
     Xarr = []
     Yarr = []
@@ -89,8 +88,10 @@ class Net(Model):
         self.bn = BatchNormalization()
 
         self.gap = AveragePooling2D(2)
-        self.fc1 = Dense(120, activation='relu')
-        self.fc2 = Dense(84, activation='relu')
+        activations = [tf.nn.relu, tf.nn.softmax, tf.nn.leaky_relu, tf.nn.gelu, tf.nn.elu]
+        ind_act = np.random.randint(0, len(activations) - 1)
+        self.fc1 = Dense(np.random.randint(20, 200), activation=activations[ind_act])
+        self.fc2 = Dense(np.random.randint(20, 200), activation=activations[ind_act])
         self.fc3 = Dense(3)
 
     def call(self, x):
@@ -129,7 +130,7 @@ def loss_f(truth, prediction):
 def auc_f(truth, prediction):
     roc_auc_values = []
     for predict, true in zip(prediction, truth):
-        y_true = [0 for _ in range(10)]
+        y_true = [0 for _ in range(3)]
         y_true[true[0]] = 1
         roc_auc_score = roc_auc(y_true=y_true,
                                 y_score=predict)
